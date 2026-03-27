@@ -6,14 +6,19 @@
 class Token {
 public:
 
-
+std::string label;
 std::string opcode;
 std::string operand1;
 std::string operand2;
 std::string operand3;
 Token(std::string line)   
     {
- 
+ //to handle label:
+        size_t colonPos = line.find(':');
+        if (colonPos != std::string::npos) {
+            label = line.substr(0, colonPos);
+            line.erase(0, colonPos + 1); // Remove the label from the line
+        }
     // Tokenize the line and populate the opcode, rd, rs1, and rs2 (if type r,)
     line.erase(0, line.find_first_not_of(" \t")); // Trim leading whitespace
     size_t pos = line.find(' ');
