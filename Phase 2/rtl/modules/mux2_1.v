@@ -1,4 +1,4 @@
-module 2-1mux(out, A1, A2, Select);
+module mux2_1(out, A1, A2, Select);
 
 output out;
 input A1, A2, Select;

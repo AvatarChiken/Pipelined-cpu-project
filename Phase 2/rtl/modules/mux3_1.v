@@ -1,4 +1,4 @@
-module mux3to1(out, A1, A2, A3, Select1, Select0);
+module mux3_1(out, A1, A2, A3, Select1, Select0);
 
 output out;
 input A1, A2, A3, Select1, Select0;
