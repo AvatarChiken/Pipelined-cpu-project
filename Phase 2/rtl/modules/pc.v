@@ -1,10 +1,10 @@
 module pc (
-  
   input [63:0] PC_in,
   input clk,
   input reset,
   input stall, 
-  output reg [63:0] PC_out);
+  output reg [63:0] PC_out
+  );
   
   always @(posedge clk or posedge reset)
     begin
