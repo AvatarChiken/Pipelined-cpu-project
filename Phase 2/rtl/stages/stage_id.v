@@ -1,8 +1,8 @@
 module stage_id (
-    input wire [63:0] PC_in,
+    input wire [31:0] PC_in,
     input wire [31:0] instruction_in,
     input wire regwrite_in,
-    output wire [63:0] PC_out,
+    output wire [31:0] PC_out,
     output wire [31:0] read_data1,
     output wire [31:0] read_data2,
     output wire [63:0] sign_imm,

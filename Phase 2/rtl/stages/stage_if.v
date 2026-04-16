@@ -4,7 +4,7 @@ module stage_if (
     input wire clk,
     input wire rst,
     input wire stall,
-    output wire [63:0] PC,
+    output wire [31:0] PC,
     output wire [31:0] instruction
 );
 wire adder_out, mux_out,pc_out,imem_out; 
