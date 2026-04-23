@@ -1,54 +1,181 @@
-# RISC-V Assembler
+# Pipelined CPU Project (RISC-V)
 
-A custom, two-pass RISC-V assembler written in C++ that translates RISC-V assembly source code into 32-bit hexadecimal machine code. This assembler is designed as part of a larger Pipelined CPU project, providing the necessary machine code to run on a custom CPU emulator or instruction memory.
+This repository is organized as a multi-phase project:
 
-## Features
+1. Phase 1 builds a custom assembler in C++.
+2. Phase 2 implements and verifies a hardware pipeline in Verilog.
 
-- **Two-Pass Assembly:** The first pass scans the code to record label addresses and calculate offsets, while the second pass translates the opcodes and operands into machine code.
-- **Object-Oriented Design:** Models different RISC-V instruction formats (R-Type, I-Type, S-Type, SB-Type, and UJ-Type) using inheritance and polymorphism for modular encoding.
-- **Custom Tokenizer:** Safely parses assembly syntax, mapping opcodes, registers, immediate values, and memory offsets.
-- **Machine Code Output:** Automatically generates an `output.hex` file containing the 32-bit zero-padded machine code for seamless integration with simulators.
+The intent is an end-to-end flow: write RISC-V assembly, assemble it into machine code, then execute that code on the pipelined core.
 
-## Supported Instructions
+## High-Level Phase Map
 
-The assembler currently supports a core subset of base RISC-V instructions:
-- **R-Type (Register-Register):** `ADDW`, `AND`, `XOR`, `OR`, `SLTU`, `SRL`, `SRA`
-- **I-Type (Immediate):** `ADDIW`, `ANDI`, `ORI`, `LW`, `JALR`
-- **S-Type (Store):** `SW`
-- **SB-Type (Branch):** `BGE`, `BNE`
-- **UJ-Type (Jump):** `JAL`
+- Phase 1: Software toolchain (assembler)
+- Phase 2: Hardware datapath/control (RTL + testbenches)
+- Shared test assets: assembly programs and expected machine code outputs
 
-## Project Structure
+---
 
-- `assembler.cpp`: Entry point containing the core two-pass assembler logic and command-line interface.
-- `instruction_class.cpp`: Object-oriented implementations for generating machine code based on instruction types (R, I, S, SB, UJ).
-- `token.cpp`: Tokenizer for parsing the assembly source code into digestible components.
-- `opcodes.h`: Definitions for opcodes, function codes (funct3/funct7), and register maps.
-- `Assembler Test Cases/`: Includes example RISC-V assembly files (`.asm`) and their corresponding expected machine code outputs (`.txt`).
+## Phase 1: Assembler (C++)
 
-## Building the Assembler
+### Goal
 
-You can compile the assembler using any standard C++ compiler like `g++`. A typical build command looks like this:
+Convert RISC-V assembly source files into 32-bit machine code words that can be loaded into instruction memory.
+
+### Structure
+
+- `Phase 1/assembler.cpp`
+	- Main program flow.
+	- Handles file input, pass execution, and final output generation.
+- `Phase 1/token.cpp`
+	- Lexical/token parsing for instructions, registers, immediates, labels, and memory operands.
+- `Phase 1/instruction_class.cpp`
+	- Encodes instruction formats (R, I, S, SB, UJ).
+	- Central place for bitfield assembly.
+- `Phase 1/opcodes.h`
+	- Opcode and function-code lookup tables.
+	- Register name mappings and constants.
+
+### How It Works
+
+The assembler follows a two-pass approach:
+
+1. Pass 1 (symbol discovery)
+	 - Scans all lines.
+	 - Records label -> address mappings.
+	 - Tracks instruction addresses for later branch/jump resolution.
+
+2. Pass 2 (encoding)
+	 - Re-parses each instruction line.
+	 - Resolves labels to immediate offsets.
+	 - Encodes final 32-bit instruction words by format.
+
+3. Output stage
+	 - Emits machine code (hex text) in instruction order.
+	 - Output can be used to initialize instruction memory for RTL simulation.
+
+### Supported Instruction Families
+
+- R-Type: register-register arithmetic/logical
+- I-Type: immediate arithmetic and loads
+- S-Type: stores
+- SB-Type: conditional branches
+- UJ-Type: jumps
+
+Exact mnemonics depend on the lookup/encoding tables in `opcodes.h` and instruction handlers in `instruction_class.cpp`.
+
+### Build and Run
+
+Typical build (from project root):
 
 ```bash
-g++ assembler.cpp token.cpp instruction_class.cpp -o assembler
+g++ "Phase 1/assembler.cpp" "Phase 1/token.cpp" "Phase 1/instruction_class.cpp" -o assembler
 ```
 
-*(Note: Depending on how header dependencies are structured, you might just need to compile `assembler.cpp` if it includes the other `.cpp` files directly, but standard compilation links all source files together.)*
+Run:
 
-Alternatively, use the provided VS Code build task via `Ctrl+Shift+B` if you are using the VS Code environment (`C/C++: g++.exe build active file`).
-
-## Usage
-
-Run the compiled executable and pass your assembly file as a command-line argument:
-
-```bash
-./assembler <input_file.asm>
-```
-
-**Example:**
 ```bash
 ./assembler "Assembler Test Cases/RISC-V Instructions/test1_arithmetic.asm"
 ```
 
-The assembled machine code will be written to a file named `output.hex` in the current working directory. You can open this file to see the resulting 32-bit hexadecimal instructions.
+---
+
+## Phase 2: Pipelined CPU RTL (Verilog)
+
+### Goal
+
+Implement a pipelined RISC-V-like execution core with modular datapath/control, then verify behavior using simulation testbenches.
+
+### Structure
+
+- `Phase 2/rtl/modules/`
+	- Reusable building blocks:
+		- ALU, ALU control, control unit
+		- PC, muxes, immediate generator, shifter, adder
+		- register file
+- `Phase 2/rtl/memory/`
+	- `imem.v`: instruction memory model
+	- `dmem.v`: data memory model
+- `Phase 2/rtl/stages/`
+	- Pipeline stage wrappers:
+		- `stage_if.v`: instruction fetch + PC update
+		- `stage_id.v`: decode + register read + immediate generation
+		- `stage_exe.v`: ALU operation + branch target/condition path
+		- `stage_mem.v`: data memory access + branch decision output
+		- `stage_wb.v`: writeback data selection
+- `Phase 2/rtl/registers/`
+	- Pipeline register modules (inter-stage state capture and flush behavior).
+- `Phase 2/rtl/top/riscv_core.v`
+	- Top-level integration of stage modules.
+	- Defines end-to-end signal flow and feedback paths.
+
+### How It Works
+
+Per-cycle conceptual flow:
+
+1. IF stage
+	 - Computes next PC (`PC + 4` or branch target).
+	 - Fetches instruction from instruction memory.
+
+2. ID stage
+	 - Decodes opcode/control intent.
+	 - Reads source registers.
+	 - Generates sign-extended immediate.
+
+3. EXE stage
+	 - Selects ALU operands.
+	 - Executes arithmetic/logic or address calculation.
+	 - Produces zero/condition information and branch target contribution.
+
+4. MEM stage
+	 - Performs load/store against data memory.
+	 - Finalizes branch-taken decision signal.
+
+5. WB stage
+	 - Selects ALU result vs memory data.
+	 - Drives register file writeback path.
+
+### Test and Verification Layout
+
+- `Phase 2/tb/modules/`
+	- Unit-level testbenches for combinational/sequential modules and register modules.
+- `Phase 2/tb/stages/`
+	- Stage-level testbenches for IF/ID/EXE/MEM/WB wrappers.
+- `Phase 2/tb/system/`
+	- Top-level core smoke/integration testbench.
+
+A combined compile artifact for TB validation is generated as:
+
+- `Phase 2/tb/all_tb_check.out`
+
+---
+
+## Shared Test Assets
+
+Two mirrored test-data locations are present in the repository:
+
+- `Assembler Test Cases/RISC-V Instructions/`
+	- Assembly input programs.
+- `Assembler Test Cases/Machine Code/`
+	- Expected machine code outputs.
+
+Additional top-level copies also exist:
+
+- `RISC-V Instructions/`
+- `Machine Code/`
+
+These files are useful for:
+
+1. Assembler correctness checks (Phase 1).
+2. Program loading and behavioral testing in RTL simulations (Phase 2).
+
+---
+
+## Recommended End-to-End Workflow
+
+1. Write or choose an `.asm` program from the instruction test set.
+2. Run Phase 1 assembler to produce machine code output.
+3. Load machine code into instruction memory initialization flow.
+4. Run module/stage/system testbenches in Phase 2.
+5. Compare observed behavior (register/memory/branch flow) against expected results.
+
+This phase split keeps software translation logic and hardware execution logic independent, while still enabling a complete toolchain-to-core pipeline.
