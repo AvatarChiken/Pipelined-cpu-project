@@ -1,24 +1,55 @@
 module stage_id (
     input wire [31:0] PC_in,
     input wire [31:0] instruction_in,
-    input wire regwrite_in,
+    input wire wb_regwrite,
+    input wire [4:0] wb_rd,
+    input wire [31:0] wb_write_data,
     output wire [31:0] PC_out,
     output wire [31:0] read_data1,
     output wire [31:0] read_data2,
     output wire [63:0] sign_imm,
-    output wire [4:0] opcode,
-    output wire [5:0] func7, 
-    output wire [31:0] control_signals,
-    input wire clk,
-    input wire rst
+    output wire [6:0] opcode,
+    output wire [3:0] funct,
+    output wire [1:0] alusrc,
+    output wire [1:0] aluOP,
+    output wire regwrite,
+    output wire memtoreg,
+    output wire memwrite,
+    output wire memread,
+    output wire branch,
+    output wire [4:0] rd,
+    input wire clk
 );
+    main_control main_control_inst(
+        .opcode(instruction_in[6:0]),
+        .alusrc(alusrc),
+        .aluOP(aluOP),
+        .regwrite(regwrite),
+        .memtoreg(memtoreg),
+        .memwrite(memwrite),
+        .memread(memread),
+        .branch(branch),
+        .pcsrc()
+    );
 
+    reg_file reg_file_inst(
+        .clk(clk),
+        .rs1(instruction_in[19:15]),
+        .rs2(instruction_in[24:20]),
+        .writereg(wb_rd),
+        .writedata(wb_write_data),
+        .regwrite(wb_regwrite),
+        .readdata1(read_data1),
+        .readdata2(read_data2)
+    );
 
-    reg_file reg_file(.read_reg1(instruction_in[19:15]), .read_reg2(instruction_in[24:20]), .write_reg(instruction_in[11:7]), .write_data(read_data1), .regwrite(regwrite_in), .clk(clk), .rst(rst), .read_data1(read_data1), .read_data2(read_data2));
-    imm_gen imm_gen(.instruction(instruction_in), .sign_imm(sign_imm));
-    assign sign_imm = sign_imm_out;
+    imm_gen imm_gen_inst(
+        .instruction(instruction_in),
+        .immediate(sign_imm)
+    );
+
     assign opcode = instruction_in[6:0];
-    assign func7 = instruction_in[31:25];
-    assign control_signals = instruction_in[31:0]; 
-    assign PC_out = PC_in; // Pass the PC value to the next stage
+    assign funct = {instruction_in[30], instruction_in[14:12]};
+    assign PC_out = PC_in;
+    assign rd = instruction_in[11:7];
 endmodule

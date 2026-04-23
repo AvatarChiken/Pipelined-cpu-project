@@ -2,8 +2,7 @@ module alu (
     input wire [31:0] operand_a,
     input wire [31:0] operand_b,
     input wire [2:0] alu_control,
-    output wire zero;
-    
+    output wire zero,
     output wire [31:0] result
 );
     reg [31:0] alu_result;
