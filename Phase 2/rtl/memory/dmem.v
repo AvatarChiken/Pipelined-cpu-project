@@ -6,7 +6,8 @@ module dmem (
     input wire memread,
     input wire clk
 );
-reg [31:0] mem[0:255];
+reg [31:0] mem[0:8191]; // 8KB memory
+if (memwrite || memread) begin
     always @(posedge clk && memwrite) begin
   
         mem[addr] <= writedata;
@@ -16,6 +17,7 @@ reg [31:0] mem[0:255];
         
         readdata <= mem[addr];
     end
+end
 else begin
     readdata <= 32'b0; // Default value when not reading
 end
