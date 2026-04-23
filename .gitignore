@@ -2,3 +2,4 @@
 output.hex
 assembler
 *.out
+*.vcd

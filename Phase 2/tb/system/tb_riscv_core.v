@@ -13,6 +13,9 @@ module tb_riscv_core;
 	always #5 clk = ~clk;
 
 	initial begin
+		$dumpfile("Phase 2/tb/system/tb_riscv_core.vcd");
+		$dumpvars(0, tb_riscv_core);
+
 		clk = 0;
 		rst = 1;
 		fail = 0;
