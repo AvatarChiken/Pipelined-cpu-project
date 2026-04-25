@@ -1,66 +1,93 @@
 module main_control (
     input wire [6:0] opcode,
+    input wire [2:0] funct3,
     output reg [1:0] alusrc,
-    output reg [1:0] aluOP,
+    output reg [2:0] aluOP,
     output reg regwrite,
     output reg memtoreg,
     output reg memwrite,
     output reg memread,
-    output reg branch,
-    output reg pcsrc
+    output reg branch
 
 );
 always @(*) begin
     case (opcode)
-        7'b0110011: begin // R-type
+        7'h34: begin // R-type
             alusrc = 2'b00;
-            aluOP = 2'b10;
-            regwrite = 1;
-            memtoreg = 0;
-            memwrite = 0;
-            memread = 0;
-            branch = 0;
-            pcsrc = 0;
+            aluOP = 3'b010;
+            regwrite = 1'b1;
+            memtoreg = 1'b0;
+            memwrite = 1'b0;
+            memread = 1'b0;
+            branch = 1'b0;
         end
-        7'b0000011: begin // ld / lw
+
+        7'h14: begin // I-type: addiw/andi/ori/lw
             alusrc = 2'b01;
-            aluOP = 2'b00;
-            regwrite = 1;
-            memtoreg = 1;
-            memwrite = 0;
-            memread = 1;
-            branch = 0;
-            pcsrc = 0;
+            if (funct3 == 3'h3) begin // lw
+                aluOP = 3'b000;
+                regwrite = 1'b1;
+                memtoreg = 1'b1;
+                memwrite = 1'b0;
+                memread = 1'b1;
+            end else begin
+                aluOP = 3'b011;
+                regwrite = 1'b1;
+                memtoreg = 1'b0;
+                memwrite = 1'b0;
+                memread = 1'b0;
+            end
+            branch = 1'b0;
         end
-        7'b0100011: begin // sd / sw
+
+        7'h24: begin // S-type: sw
             alusrc = 2'b01;
-            aluOP = 2'b00;
-            regwrite = 0;
-            memtoreg = 1'bx; // Don't care
-            memwrite = 1;
-            memread = 0;
-            branch = 0;
-            pcsrc = 0;
+            aluOP = 3'b000;
+            regwrite = 1'b0;
+            memtoreg = 1'bx;
+            memwrite = 1'b1;
+            memread = 1'b0;
+            branch = 1'b0;
         end
-        7'b1100011: begin // beq
+
+        7'h64: begin // SB-type: bge/bne
             alusrc = 2'b00;
-            aluOP = 2'b01;
-            regwrite = 0;
-            memtoreg = 1'bx; // Don't care
-            memwrite = 0;
-            memread = 0;
-            branch = 1;
-            pcsrc = 1;
+            aluOP = 3'b001;
+            regwrite = 1'b0;
+            memtoreg = 1'bx;
+            memwrite = 1'b0;
+            memread = 1'b0;
+            branch = 1'b1;
         end
+
+        7'h70: begin // UJ-type: jal
+            alusrc = 2'b10;
+            aluOP = 3'b100;
+            regwrite = 1'b1;
+            memtoreg = 1'b0;
+            memwrite = 1'b0;
+            memread = 1'b0;
+            branch = 1'b1;
+        end
+
+        7'h68: begin // I-type: jalr
+            alusrc = 2'b11;
+            aluOP = 3'b100;
+            regwrite = 1'b1;
+            memtoreg = 1'b0;
+            memwrite = 1'b0;
+            memread = 1'b0;
+            branch = 1'b1;
+        end
+
         default: begin // Default case for unsupported opcodes
-            alusrc = 2'bx; // Don't care
-            aluOP = 2'bx; // Don't care
-            regwrite = 0;
-            memtoreg = 1'bx; // Don't care
-            memwrite = 0;
-            memread = 0;
-            branch = 0;
-            pcsrc = 0;
+            alusrc = 2'b00;
+            aluOP = 3'b000;
+            regwrite = 1'b0;
+            memtoreg = 1'b0;
+            memwrite = 1'b0;
+            memread = 1'b0;
+            branch = 1'b0;
         end
     endcase
 end

@@ -3,3 +3,4 @@ output.hex
 assembler
 *.out
 *.vcd
+Phase 1/assembler_bin

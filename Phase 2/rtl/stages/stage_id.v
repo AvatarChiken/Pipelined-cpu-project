@@ -11,7 +11,7 @@ module stage_id (
     output wire [6:0] opcode,
     output wire [3:0] funct,
     output wire [1:0] alusrc,
-    output wire [1:0] aluOP,
+    output wire [2:0] aluOP,
     output wire regwrite,
     output wire memtoreg,
     output wire memwrite,
@@ -22,14 +22,14 @@ module stage_id (
 );
     main_control main_control_inst(
         .opcode(instruction_in[6:0]),
+        .funct3(instruction_in[14:12]),
         .alusrc(alusrc),
         .aluOP(aluOP),
         .regwrite(regwrite),
         .memtoreg(memtoreg),
         .memwrite(memwrite),
         .memread(memread),
-        .branch(branch),
-        .pcsrc()
+        .branch(branch)
     );
 
     reg_file reg_file_inst(

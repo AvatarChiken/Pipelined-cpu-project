@@ -12,7 +12,7 @@ wire [63:0] sign_imm_id;
 wire [6:0] opcode_id;
 wire [3:0] funct_id;
 wire [1:0] alusrc_id;
-wire [1:0] aluOP_id;
+wire [2:0] aluOP_id;
 wire regwrite_id;
 wire memtoreg_id;
 wire memwrite_id;
