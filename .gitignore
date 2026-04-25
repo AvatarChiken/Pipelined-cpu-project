@@ -5,3 +5,5 @@ assembler
 *.vcd
 Phase 1/assembler_bin
 docs/
+.ds_store
+.DS_Store
