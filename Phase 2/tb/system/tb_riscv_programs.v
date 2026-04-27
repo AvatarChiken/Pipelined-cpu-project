@@ -10,13 +10,14 @@ module tb_riscv_programs;
     integer max_cycles;
     reg [31:0] instr_word;
     reg [1023:0] program_file;
+    reg [1023:0] vcd_file;
 
     riscv_core dut (
         .clk(clk),
         .rst(rst)
     );
 
-    always #5 clk = ~clk;
+    always #1 clk = ~clk;
 
     initial begin
         if (!$value$plusargs("PROGRAM=%s", program_file)) begin
@@ -27,6 +28,13 @@ module tb_riscv_programs;
         if (!$value$plusargs("CYCLES=%d", max_cycles)) begin
             max_cycles = 80;
         end
+
+        if (!$value$plusargs("VCD=%s", vcd_file)) begin
+            vcd_file = "Phase 2/tb/system/tb_riscv_programs.vcd";
+        end
+
+        $dumpfile(vcd_file);
+        $dumpvars(0, tb_riscv_programs);
 
         clk = 0;
         rst = 1;
